@@ -32,15 +32,25 @@ jobs:
       # Step 6: Accept EULA
       - run: echo "eula=true" > eula.txt
 
-      # Step 7: Start Spigot server in a loop and save artifacts every 30 mins
       - name: Start Server with Periodic Backups
         run: |
-          mkdir -p backups
-          while true; do
-            java -Xms2G -Xmx4G -jar spigot-1.16.5.jar nogui &
-            SERVER_PID=$!
-            # Wait 30 minutes
-            sleep 1800
-            # Backup worlds and jar
-            zip -r backups/worlds_backup_$(date +%
-            
+        #!/bin/bash
+        mkdir -p backups
+        while true; do
+        java -Xms2G -Xmx4G -jar spigot-1.16.5.jar nogui &
+        SERVER_PID=$!
+        echo "Server started with PID $SERVER_PID"
+      
+        # Wait 30 minutes
+        sleep 1800
+      
+        # Backup worlds and jar
+        BACKUP_NAME="backups/worlds_backup_$(date +%s).zip"
+        zip -r "$BACKUP_NAME" world spigot-1.16.5.jar
+      
+        # Stop server and restart
+        kill $SERVER_PID
+        wait $SERVER_PID 2>/dev/null
+        echo "Server restarted for next backup cycle"
+      done
+    
