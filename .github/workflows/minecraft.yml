@@ -21,24 +21,24 @@ jobs:
           java-version: '16'
 
       # Step 3: Install dependencies
-      - run: sudo apt-get update && sudo apt-get install -y git wget zip
+      - run: sudo apt-get update && sudo apt-get install -y wget zip
 
-      # Step 4: Download BuildTools
-      - run: wget https://hub.spigotmc.org/jenkins/job/BuildTools/lastSuccessfulBuild/artifact/target/BuildTools.jar -O BuildTools.jar
+      # Step 4: Download prebuilt Spigot 1.16.5 jar
+      - name: Download Spigot 1.16.5
+        run: |
+          mkdir -p server
+          wget -O server/spigot-1.16.5.jar https://cdn.getbukkit.org/spigot/spigot-1.16.5.jar
 
-      # Step 5: Build Spigot 1.16.5
-      - run: java -jar BuildTools.jar --rev 1.16.5
+      # Step 5: Accept EULA
+      - run: echo "eula=true" > server/eula.txt
 
-      # Step 6: Accept EULA
-      - run: echo "eula=true" > eula.txt
-
-      # Step 7: Start server and backup every 30 minutes
+      # Step 6: Start server and backup every 30 minutes
       - name: Start Server with Periodic Backups
         run: |
           #!/bin/bash
+          cd server
           mkdir -p backups
-          # Run server for up to 6 hours
-          END=$((SECONDS+21600))
+          END=$((SECONDS+21600))  # 6 hours max
           while [ $SECONDS -lt $END ]; do
             echo "Starting server..."
             java -Xms2G -Xmx4G -jar spigot-1.16.5.jar nogui &
@@ -57,10 +57,10 @@ jobs:
             wait $SERVER_PID 2>/dev/null
           done
 
-      # Step 8: Upload backups as artifacts
+      # Step 7: Upload backups as artifacts
       - name: Upload Backups
         uses: actions/upload-artifact@v4
         with:
           name: spigot-backups
-          path: backups/
+          path: server/backups/
           
